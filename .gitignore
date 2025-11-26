@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.backup/
+
+# Nx
+.nx/cache
+.nx/workspace-data
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+.angular

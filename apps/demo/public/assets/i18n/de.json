@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "Component Stats Demo (DE)",
+    "subtitle": "Angular Übersetzungs-Demo-Anwendung"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "products": "Produkte",
+    "about": "Über uns",
+    "contact": "Kontakt"
+  },
+  "home": {
+    "welcome": "Willkommen in unserer Anwendung!",
+    "description": "Dies ist eine Demo-Anwendung, die die Translate-Pipe-Funktionalität demonstriert.",
+    "getting_started": "Erste Schritte",
+    "learn_more": "Mehr erfahren"
+  },
+  "products": {
+    "title": "Unsere Produkte",
+    "description": "Durchsuchen Sie unsere erstaunliche Produktkollektion",
+    "product_1": {
+      "name": "Premium Widget",
+      "description": "Ein hochwertiges Widget für alle Ihre Bedürfnisse",
+      "price": "Preis"
+    },
+    "product_2": {
+      "name": "Super Gadget",
+      "description": "Das ultimative Gadget für Profis",
+      "price": "Preis"
+    },
+    "product_3": {
+      "name": "Mega Werkzeug",
+      "description": "Ein unverzichtbares Werkzeug für alltägliche Aufgaben",
+      "price": "Preis"
+    },
+    "add_to_cart": "In den Warenkorb",
+    "view_details": "Details anzeigen"
+  },
+  "about": {
+    "title": "Über uns",
+    "company_info": "Wir sind ein führendes Unternehmen in der Widget-Herstellung",
+    "our_mission": "Unsere Mission",
+    "mission_statement": "Unseren Kunden die besten Produkte und Dienstleistungen zu bieten",
+    "team_size": "Teammitglieder",
+    "founded": "Gegründet"
+  },
+  "contact": {
+    "title": "Kontaktieren Sie uns",
+    "description": "Nehmen Sie Kontakt mit unserem Team auf",
+    "form": {
+      "name": "Name",
+      "email": "E-Mail",
+      "message": "Nachricht",
+      "submit": "Nachricht senden",
+      "success": "Ihre Nachricht wurde erfolgreich gesendet!",
+      "error": "Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    },
+    "info": {
+      "address": "Adresse",
+      "phone": "Telefon",
+      "email": "E-Mail"
+    }
+  },
+  "common": {
+    "loading": "Wird geladen...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "yes": "Ja",
+    "no": "Nein",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren"
+  },
+  "footer": {
+    "copyright": "© 2025 Component Stats. Alle Rechte vorbehalten.",
+    "privacy_policy": "Datenschutz",
+    "terms_of_service": "Nutzungsbedingungen",
+    "follow_us": "Folgen Sie uns"
+  }
+}

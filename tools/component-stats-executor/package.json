@@ -1,0 +1,16 @@
+{
+  "name": "@component-stats/executor",
+  "version": "1.0.0",
+  "description": "Nx executor for analyzing Angular component usage and translations",
+  "main": "./src/index.js",
+  "executors": "./executors.json",
+  "keywords": [
+    "nx",
+    "executor",
+    "angular",
+    "component-stats"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  }
+}

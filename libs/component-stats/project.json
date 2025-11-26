@@ -1,0 +1,33 @@
+{
+  "name": "component-stats",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/component-stats/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/component-stats",
+        "main": "libs/component-stats/src/index.ts",
+        "tsConfig": "libs/component-stats/tsconfig.lib.json",
+        "assets": [
+          {
+            "input": "libs/component-stats",
+            "glob": "*.md",
+            "output": "/"
+          },
+          {
+            "input": "libs/component-stats",
+            "glob": "package-dist.json",
+            "output": "/"
+          }
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

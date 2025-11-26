@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Component Stats Analyzer Executor",
+  "description": "Analyze Angular component usage and save results to JSON",
+  "type": "object",
+  "properties": {
+    "projectPath": {
+      "type": "string",
+      "description": "Path to the Angular project to analyze (relative to workspace root)"
+    },
+    "outputFile": {
+      "type": "string",
+      "description": "Path where the analysis results JSON file should be saved (relative to workspace root)"
+    },
+    "tsconfigPath": {
+      "type": "string",
+      "description": "Optional path to tsconfig.json (relative to workspace root)"
+    },
+    "minUsage": {
+      "type": "number",
+      "description": "Optional minimum usage count to include in results",
+      "default": 0
+    },
+    "includeUnused": {
+      "type": "boolean",
+      "description": "Whether to include unused components in the results",
+      "default": true
+    }
+  },
+  "required": ["projectPath", "outputFile"],
+  "additionalProperties": false
+}

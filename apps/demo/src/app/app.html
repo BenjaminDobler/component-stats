@@ -1,0 +1,40 @@
+<div class="app-container">
+  <nav class="navbar">
+    <div class="nav-content">
+      <div class="logo">
+        <h2>{{ 'app.title' | translate }}</h2>
+      </div>
+      <div class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          {{ 'navigation.home' | translate }}
+        </a>
+        <a routerLink="/products" routerLinkActive="active">
+          {{ 'navigation.products' | translate }}
+        </a>
+        <a routerLink="/contact" routerLinkActive="active">
+          {{ 'navigation.contact' | translate }}
+        </a>
+      </div>
+      <div class="lang-switcher">
+        <button 
+          (click)="switchLanguage('en')" 
+          [class.active]="currentLang === 'en'">
+          EN
+        </button>
+        <button 
+          (click)="switchLanguage('de')" 
+          [class.active]="currentLang === 'de'">
+          DE
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <router-outlet />
+  </main>
+
+  <footer class="footer">
+    <p>{{ 'footer.copyright' | translate }}</p>
+  </footer>
+</div>

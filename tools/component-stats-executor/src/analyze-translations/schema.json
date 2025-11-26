@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "Analyze Translations executor",
+  "description": "Analyzes translate pipe usage in an Angular project and outputs results as JSON",
+  "type": "object",
+  "properties": {
+    "projectPath": {
+      "type": "string",
+      "description": "Path to the Angular project to analyze (relative to workspace root)"
+    },
+    "outputFile": {
+      "type": "string",
+      "description": "Path where the analysis results should be saved as JSON (relative to workspace root)"
+    },
+    "tsconfigPath": {
+      "type": "string",
+      "description": "Optional path to tsconfig.json (defaults to projectPath/tsconfig.json)"
+    }
+  },
+  "required": ["projectPath", "outputFile"]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "angular-component-stats",
+  "version": "1.0.0",
+  "description": "A Node.js library that parses Angular projects and analyzes component usage in templates",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "bin": {
+    "angular-component-stats": "./src/cli.js"
+  },
+  "keywords": [
+    "angular",
+    "component",
+    "analysis",
+    "stats",
+    "parser",
+    "translate",
+    "i18n"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/compiler": "^19.0.0",
+    "@angular/compiler-cli": "^19.0.0",
+    "@angular/language-service": "^19.0.0",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "glob": "^11.0.0",
+    "ts-morph": "^21.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/component-stats.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/component-stats/issues"
+  },
+  "homepage": "https://github.com/yourusername/component-stats#readme"
+}

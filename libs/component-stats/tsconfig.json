@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "../../dist/libs/component-stats",
+    "declaration": true,
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*.ts"]
+}

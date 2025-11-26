@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "typeRoots": ["node_modules/@types"],
+    "types": ["node"]
+  },
+  "exclude": ["node_modules", "tmp"]
+}

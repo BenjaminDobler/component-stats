@@ -1,0 +1,14 @@
+{
+  "executors": {
+    "analyze": {
+      "implementation": "./src/analyze/executor",
+      "schema": "./src/analyze/schema.json",
+      "description": "Analyzes Angular component usage in a project and outputs results as JSON"
+    },
+    "analyze-translations": {
+      "implementation": "./src/analyze-translations/executor",
+      "schema": "./src/analyze-translations/schema.json",
+      "description": "Analyzes translate pipe usage in an Angular project and outputs results as JSON"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "Component Stats Demo",
+    "subtitle": "Angular Translation Demo Application"
+  },
+  "navigation": {
+    "home": "Home",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "home": {
+    "welcome": "Welcome to our application!",
+    "description": "This is a demo application showcasing the translate pipe functionality.",
+    "getting_started": "Getting Started",
+    "learn_more": "Learn More"
+  },
+  "products": {
+    "title": "Our Products",
+    "description": "Browse our amazing collection of products",
+    "product_1": {
+      "name": "Premium Widget",
+      "description": "A high-quality widget for all your needs",
+      "price": "Price"
+    },
+    "product_2": {
+      "name": "Super Gadget",
+      "description": "The ultimate gadget for professionals",
+      "price": "Price"
+    },
+    "product_3": {
+      "name": "Mega Tool",
+      "description": "An essential tool for everyday tasks",
+      "price": "Price"
+    },
+    "add_to_cart": "Add to Cart",
+    "view_details": "View Details"
+  },
+  "about": {
+    "title": "About Us",
+    "company_info": "We are a leading company in widget manufacturing",
+    "our_mission": "Our Mission",
+    "mission_statement": "To provide the best products and services to our customers",
+    "team_size": "Team Members",
+    "founded": "Founded"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "description": "Get in touch with our team",
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "submit": "Send Message",
+      "success": "Your message has been sent successfully!",
+      "error": "Failed to send message. Please try again."
+    },
+    "info": {
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort"
+  },
+  "footer": {
+    "copyright": "© 2025 Component Stats. All rights reserved.",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "follow_us": "Follow Us"
+  }
+}
