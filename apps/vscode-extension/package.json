@@ -1,0 +1,133 @@
+{
+  "name": "component-stats-vscode",
+  "displayName": "Component Stats",
+  "description": "Angular component usage analysis and translation validation",
+  "version": "0.1.0",
+  "publisher": "component-stats",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BenjaminDobler/component-stats"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "angular",
+    "components",
+    "translations",
+    "i18n",
+    "analysis"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:html",
+    "workspaceContains:**/angular.json"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "componentStats.validateTranslations",
+        "title": "Validate Translations",
+        "category": "Component Stats",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "componentStats.analyzeComponents",
+        "title": "Analyze Component Usage",
+        "category": "Component Stats",
+        "icon": "$(search)"
+      },
+      {
+        "command": "componentStats.showResults",
+        "title": "Show Results",
+        "category": "Component Stats",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "componentStats.validateTranslations",
+          "when": "explorerResourceIsFolder || resourceFilename == 'angular.json' || resourceFilename == 'project.json'",
+          "group": "componentStats@1"
+        },
+        {
+          "command": "componentStats.analyzeComponents",
+          "when": "explorerResourceIsFolder || resourceFilename == 'angular.json' || resourceFilename == 'project.json'",
+          "group": "componentStats@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "componentStats.validateTranslations"
+        },
+        {
+          "command": "componentStats.analyzeComponents"
+        },
+        {
+          "command": "componentStats.showResults"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "component-stats",
+          "title": "Component Stats",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "component-stats": [
+        {
+          "id": "componentStatsTree",
+          "name": "Translation Status"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Component Stats",
+      "properties": {
+        "componentStats.translationsPath": {
+          "type": "string",
+          "default": "src/assets/i18n",
+          "description": "Path to translation files directory (relative to workspace root)"
+        },
+        "componentStats.autoRunOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run validation when translation files are saved"
+        },
+        "componentStats.languages": {
+          "type": "array",
+          "default": [],
+          "description": "List of expected language codes (e.g., ['en', 'de']). Leave empty to auto-detect."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "~5.6.0"
+  },
+  "dependencies": {
+    "@angular/compiler": "^20.0.0",
+    "@angular/compiler-cli": "^20.0.0",
+    "typescript": "^5.8.0"
+  }
+}

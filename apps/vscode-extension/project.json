@@ -1,0 +1,68 @@
+{
+  "name": "vscode-extension",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/vscode-extension/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/vscode-extension",
+        "main": "apps/vscode-extension/src/extension.ts",
+        "tsConfig": "apps/vscode-extension/tsconfig.json",
+        "assets": [
+          "apps/vscode-extension/package.json",
+          "apps/vscode-extension/README.md"
+        ],
+        "bundle": true,
+        "thirdParty": true,
+        "format": ["cjs"],
+        "platform": "node",
+        "external": ["vscode", "@angular/compiler-cli", "typescript"],
+        "outputFileName": "src/extension.js",
+        "esbuildOptions": {
+          "sourcemap": true,
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "dependsOn": []
+    },
+    "copy-assets": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "mkdir -p dist/apps/vscode-extension/webview",
+          "cp -r dist/apps/vscode-extension-ui/browser/* dist/apps/vscode-extension/webview/"
+        ],
+        "parallel": false
+      },
+      "dependsOn": ["build", "build-webview"]
+    },
+    "build-webview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx build vscode-extension-ui --configuration=production"
+        ],
+        "parallel": false
+      }
+    },
+    "package": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd dist/apps/vscode-extension && npx @vscode/vsce package --no-dependencies"
+      },
+      "dependsOn": ["build"]
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "code --install-extension dist/apps/vscode-extension/*.vsix"
+      },
+      "dependsOn": ["package"]
+    }
+  }
+}
