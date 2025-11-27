@@ -3,33 +3,5 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "tools/component-stats-executor/src",
   "projectType": "library",
-  "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/tools/component-stats-executor",
-        "main": "tools/component-stats-executor/src/index.ts",
-        "tsConfig": "tools/component-stats-executor/tsconfig.json",
-        "assets": [
-          "tools/component-stats-executor/*.md",
-          {
-            "input": "tools/component-stats-executor",
-            "glob": "executors.json",
-            "output": "."
-          },
-          {
-            "input": "tools/component-stats-executor",
-            "glob": "package.json",
-            "output": "."
-          },
-          {
-            "input": "tools/component-stats-executor/src",
-            "glob": "**/schema.json",
-            "output": "./src"
-          }
-        ]
-      }
-    }
-  }
+  "targets": {}
 }

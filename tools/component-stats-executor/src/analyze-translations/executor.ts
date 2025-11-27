@@ -1,6 +1,7 @@
 import { ExecutorContext } from '@nx/devkit';
 import * as path from 'path';
 import * as fs from 'fs';
+import { analyzeTranslatePipes } from '@component-stats/component-stats';
 
 export interface AnalyzeTranslationsExecutorSchema {
   projectPath: string;
@@ -18,10 +19,6 @@ export default async function runExecutor(
   console.log(`📁 Project: ${options.projectPath}`);
   
   try {
-    // Import from the built library
-    const libPath = path.join(workspaceRoot, 'dist', 'libs', 'component-stats', 'src', 'index.js');
-    const { analyzeTranslatePipes } = require(libPath);
-    
     const absoluteProjectPath = path.resolve(workspaceRoot, options.projectPath);
     const absoluteOutputFile = path.resolve(workspaceRoot, options.outputFile);
     

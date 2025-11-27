@@ -12,7 +12,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@component-stats/component-stats": ["libs/component-stats/src/index.ts"]
+      "@component-stats/component-stats": ["libs/component-stats/src/index.ts"],
+      "@component-stats/executor": ["tools/component-stats-executor/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "dist"]

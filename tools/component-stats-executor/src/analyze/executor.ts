@@ -1,6 +1,11 @@
 import { ExecutorContext } from '@nx/devkit';
 import * as path from 'path';
 import * as fs from 'fs';
+import { 
+  analyzeComponents, 
+  filterByMinUsage,
+  type ComponentStats 
+} from '@component-stats/component-stats';
 
 export interface AnalyzeExecutorSchema {
   projectPath: string;
@@ -8,13 +13,6 @@ export interface AnalyzeExecutorSchema {
   tsconfigPath?: string;
   minUsage?: number;
   includeUnused?: boolean;
-}
-
-interface ComponentStats {
-  name: string;
-  path: string;
-  count: number;
-  external: boolean;
 }
 
 export default async function runExecutor(
@@ -27,10 +25,6 @@ export default async function runExecutor(
   console.log(`📁 Project: ${options.projectPath}`);
   
   try {
-    // Import from the built library
-    const libPath = path.join(workspaceRoot, 'dist', 'libs', 'component-stats', 'src', 'index.js');
-    const { analyzeComponents, filterByMinUsage } = require(libPath);
-    
     const absoluteProjectPath = path.resolve(workspaceRoot, options.projectPath);
     const absoluteOutputFile = path.resolve(workspaceRoot, options.outputFile);
     

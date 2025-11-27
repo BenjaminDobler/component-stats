@@ -70,13 +70,14 @@ Analyzes translate pipe usage in an Angular project.
 
 ## Development
 
-After making changes to the executor:
+The executor runs directly from TypeScript source files using Nx's tsconfig path mappings. No build step is required!
+
+After making changes:
 
 ```bash
-# Compile TypeScript
-npx tsc --project tools/component-stats-executor/tsconfig.json
-
-# Test
+# Test immediately
 nx analyze-components demo
 nx analyze-translations demo
 ```
+
+Nx automatically uses the paths from `tsconfig.json` when running local executors.
