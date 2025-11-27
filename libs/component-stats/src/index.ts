@@ -1,5 +1,6 @@
-export { analyzeComponents, analyzeTranslatePipes, AngularComponentAnalyzer } from './analyzer-v3';
+export { analyzeComponents, analyzeTranslatePipes, validateTranslations, AngularComponentAnalyzer } from './analyzer-v3';
 export { ComponentStats, AnalyzerOptions, TranslatePipeUsage } from './types';
+export { TranslationValidationResult } from './translation-validator';
 export {
   filterByMinUsage,
   getUnusedComponents,

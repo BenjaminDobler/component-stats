@@ -9,6 +9,11 @@
       "implementation": "./src/analyze-translations/executor.ts",
       "schema": "./src/analyze-translations/schema.json",
       "description": "Analyzes translate pipe usage in an Angular project and outputs results as JSON"
+    },
+    "validate-translations": {
+      "implementation": "./src/validate-translations/executor.ts",
+      "schema": "./src/validate-translations/schema.json",
+      "description": "Validates translation coverage - reports missing and unused translation keys"
     }
   }
 }

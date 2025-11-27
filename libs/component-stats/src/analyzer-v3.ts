@@ -5,6 +5,11 @@ import { ComponentStats, AnalyzerOptions, TranslatePipeUsage } from './types';
 import { parseTemplate } from '@angular/compiler';
 import { NgtscProgram } from '@angular/compiler-cli';
 import { readConfiguration } from '@angular/compiler-cli';
+import { 
+  readTranslationFiles, 
+  validateTranslationCoverage, 
+  TranslationValidationResult 
+} from './translation-validator';
 
 interface ComponentInfo {
   className: string;
@@ -460,4 +465,22 @@ export async function analyzeTranslatePipes(options: AnalyzerOptions): Promise<T
   const analyzer = new AngularComponentAnalyzer(options);
   await analyzer.analyze();
   return analyzer.getTranslatePipeUsages();
+}
+
+export interface ValidateTranslationsOptions extends AnalyzerOptions {
+  translationsPath: string;
+}
+
+export async function validateTranslations(
+  options: ValidateTranslationsOptions
+): Promise<TranslationValidationResult> {
+  // Get all translation keys used in the project
+  const usages = await analyzeTranslatePipes(options);
+  const usedKeys = Array.from(new Set(usages.map(u => u.translationKey)));
+  
+  // Read translation files
+  const translationFiles = readTranslationFiles(options.translationsPath);
+  
+  // Validate coverage
+  return validateTranslationCoverage(usedKeys, translationFiles);
 }

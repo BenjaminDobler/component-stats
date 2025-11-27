@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "Validate Translations executor",
+  "description": "Validates that all translation keys used in code exist in translation files and reports unused keys",
+  "type": "object",
+  "properties": {
+    "projectPath": {
+      "type": "string",
+      "description": "Path to the Angular project to analyze (relative to workspace root)"
+    },
+    "translationsPath": {
+      "type": "string",
+      "description": "Path to the directory containing translation JSON files (e.g., apps/demo/public/assets/i18n)"
+    },
+    "outputFile": {
+      "type": "string",
+      "description": "Path where the validation results should be saved as JSON (relative to workspace root)"
+    },
+    "tsconfigPath": {
+      "type": "string",
+      "description": "Optional path to tsconfig.json (defaults to projectPath/tsconfig.json)"
+    }
+  },
+  "required": ["projectPath", "translationsPath", "outputFile"]
+}

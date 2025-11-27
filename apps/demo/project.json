@@ -91,6 +91,14 @@
         "projectPath": "apps/demo",
         "outputFile": "dist/stats/demo-translations.json"
       }
+    },
+    "validate-translations": {
+      "executor": "@component-stats/executor:validate-translations",
+      "options": {
+        "projectPath": "apps/demo",
+        "translationsPath": "apps/demo/public/assets/i18n",
+        "outputFile": "dist/stats/demo-validation.json"
+      }
     }
   }
 }
