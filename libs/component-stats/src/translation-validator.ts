@@ -101,6 +101,27 @@ export function readTranslationFiles(translationsPath: string): TranslationFile[
 }
 
 /**
+ * Check if a translation key matches a pattern with wildcards
+ * Example: 'products.*.name' matches 'products.product_1.name'
+ */
+function keyMatchesPattern(key: string, pattern: string): boolean {
+  // If no wildcard, do exact match
+  if (!pattern.includes('*')) {
+    return key === pattern;
+  }
+  
+  // Convert pattern to regex
+  // Escape special regex characters except *
+  const regexPattern = pattern
+    .split('.')
+    .map(part => part === '*' ? '[^.]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\.');
+  
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(key);
+}
+
+/**
  * Validate translation coverage
  */
 export function validateTranslationCoverage(
@@ -116,17 +137,38 @@ export function validateTranslationCoverage(
   for (const translationFile of translationFiles) {
     const missingKeys: string[] = [];
     const unusedKeys: string[] = [];
+    const matchedTranslationKeys = new Set<string>();
     
     // Find missing keys (used in code but not in translation file)
     for (const usedKey of usedKeySet) {
-      if (!translationFile.keys.has(usedKey)) {
+      // Check if this used key (or pattern) has at least one match in the translation file
+      let hasMatch = false;
+      
+      for (const translationKey of translationFile.keys) {
+        if (keyMatchesPattern(translationKey, usedKey)) {
+          hasMatch = true;
+          matchedTranslationKeys.add(translationKey);
+        }
+      }
+      
+      if (!hasMatch) {
         missingKeys.push(usedKey);
       }
     }
     
     // Find unused keys (in translation file but not used in code)
     for (const translationKey of translationFile.keys) {
-      if (!usedKeySet.has(translationKey)) {
+      // Check if this translation key matches any used pattern
+      let isUsed = false;
+      
+      for (const usedKey of usedKeySet) {
+        if (keyMatchesPattern(translationKey, usedKey)) {
+          isUsed = true;
+          break;
+        }
+      }
+      
+      if (!isUsed) {
         unusedKeys.push(translationKey);
       }
     }
