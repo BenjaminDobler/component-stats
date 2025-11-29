@@ -1,0 +1,20 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "declaration": true,
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@component-stats/component-stats": ["libs/component-stats/src/index.ts"],
+      "@component-stats/executor": [
+        "tools/component-stats-executor/src/index.ts"
+      ],
+      "@component-stats/ui": ["libs/ui/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

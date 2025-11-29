@@ -1,20 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "commonjs",
-    "lib": ["ES2022"],
-    "declaration": true,
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@component-stats/component-stats": ["libs/component-stats/src/index.ts"],
-      "@component-stats/executor": ["tools/component-stats-executor/src/index.ts"]
-    }
   },
-  "exclude": ["node_modules", "dist"]
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },  
+  "extends": "./tsconfig.base.json"
 }

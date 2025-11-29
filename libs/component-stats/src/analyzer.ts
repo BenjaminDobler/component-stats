@@ -1,64 +1,36 @@
 import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs';
-import { glob } from 'glob';
-import { ComponentStats, AnalyzerOptions } from './types';
+import { ComponentStats, AnalyzerOptions, TranslatePipeUsage } from './types';
 import { parseTemplate } from '@angular/compiler';
+import { NgtscProgram } from '@angular/compiler-cli';
+import { readConfiguration } from '@angular/compiler-cli';
+import { 
+  readTranslationFiles, 
+  validateTranslationCoverage, 
+  TranslationValidationResult 
+} from './translation-validator';
 
 interface ComponentInfo {
   className: string;
   selector: string;
   filePath: string;
   isStandalone: boolean;
-  imports?: string[];
+  templateContent?: string;
 }
 
 interface TemplateUsage {
   componentClass: string;
+  usedComponent: ComponentInfo | null;
   usedSelector: string;
-  filePath: string;
 }
-
-// Helper to recursively walk template nodes and find component usage
-function walkTemplateNodes(
-  nodes: any[],
-  selectorToComponent: Map<string, ComponentInfo>,
-  componentClass: string,
-  templateUsages: TemplateUsage[]
-): void {
-  for (const node of nodes) {
-    console.log(`Node type: ${node.constructor.name}, name: ${node.name}`);
-    
-    // Check if this is an element node with a name
-    if (node.name && typeof node.name === 'string') {
-      const usedComponent = selectorToComponent.get(node.name);
-      if (usedComponent) {
-        console.log(`  ✓ Found component usage: ${node.name} -> ${usedComponent.className}`);
-        templateUsages.push({
-          componentClass,
-          usedSelector: node.name,
-          filePath: usedComponent.filePath
-        });
-      } else {
-        console.log(`  - Tag ${node.name} is not a known component`);
-      }
-    }
-
-    // Recursively walk children
-    if (node.children && Array.isArray(node.children)) {
-      walkTemplateNodes(node.children, selectorToComponent, componentClass, templateUsages);
-    }
-  }
-}
-
-
 
 export class AngularComponentAnalyzer {
-  private program: ts.Program;
-  private typeChecker: ts.TypeChecker;
+  private ngProgram: NgtscProgram;
   private components: Map<string, ComponentInfo> = new Map();
   private selectorToComponent: Map<string, ComponentInfo> = new Map();
   private templateUsages: TemplateUsage[] = [];
+  private translatePipeUsages: TranslatePipeUsage[] = [];
   private projectPath: string;
 
   constructor(private options: AnalyzerOptions) {
@@ -67,31 +39,30 @@ export class AngularComponentAnalyzer {
     
     console.log(`Using tsconfig: ${tsconfigPath}`);
     
-    const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
-    const parsedConfig = ts.parseJsonConfigFileContent(
-      configFile.config,
-      ts.sys,
-      path.dirname(tsconfigPath)
-    );
-
-    console.log(`Found ${parsedConfig.fileNames.length} files to analyze`);
+    // Use Angular's readConfiguration to properly parse tsconfig
+    const config = readConfiguration(tsconfigPath);
     
-    this.program = ts.createProgram(parsedConfig.fileNames, parsedConfig.options);
-    this.typeChecker = this.program.getTypeChecker();
+    // Create Angular compiler program which has semantic analysis
+    this.ngProgram = new NgtscProgram(
+      config.rootNames,
+      config.options,
+      ts.createCompilerHost(config.options),
+      undefined
+    );
+    
+    console.log('Created Angular compiler program with full semantic analysis');
   }
 
   private findTsConfig(): string {
-    // Try common Angular/Nx tsconfig file names in order of preference
     const candidates = [
-      'tsconfig.app.json',  // Angular/Nx app-specific config
-      'tsconfig.json',      // Standard config
-      'tsconfig.lib.json',  // Angular/Nx library config
+      'tsconfig.app.json',
+      'tsconfig.json',
+      'tsconfig.lib.json',
     ];
 
     for (const candidate of candidates) {
       const tsconfigPath = path.join(this.projectPath, candidate);
       if (fs.existsSync(tsconfigPath)) {
-        // Check if this config actually includes files
         const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
         const parsed = ts.parseJsonConfigFileContent(
           configFile.config,
@@ -99,181 +70,112 @@ export class AngularComponentAnalyzer {
           path.dirname(tsconfigPath)
         );
         
-        // If this config has files, use it
         if (parsed.fileNames.length > 0) {
           return tsconfigPath;
         }
       }
     }
     
-    throw new Error('No valid tsconfig.json found in project path. Tried: ' + candidates.join(', '));
+    throw new Error('No valid tsconfig.json found in project path');
   }
 
   async analyze(): Promise<ComponentStats[]> {
-    // Step 1: Find all component files in the project
-    await this.discoverComponents();
+    // Step 1: Let Angular compiler analyze the program
+    console.log('Running Angular compilation analysis...');
     
-    // Step 2: Discover library components from imports
-    await this.discoverLibraryComponents();
+    // Step 2: Get all analyzed components from Angular compiler
+    await this.discoverComponentsFromCompiler();
     
-    // Step 3: Parse templates and find component usage
+    // Step 3: Parse templates to find usage
     await this.parseTemplates();
     
     // Step 4: Aggregate results
     return this.aggregateResults();
   }
 
-  private async discoverComponents(): Promise<void> {
-    const sourceFiles = this.program.getSourceFiles()
-      .filter(sf => !sf.isDeclarationFile && sf.fileName.includes(this.projectPath));
+  private async discoverComponentsFromCompiler(): Promise<void> {
+    console.log('Extracting component metadata from Angular compiler...');
+    
+    const program = this.ngProgram.getTsProgram();
+    
+    // Get the workspace root (go up from project path to find workspace root)
+    const workspaceRoot = this.findWorkspaceRoot(this.projectPath);
+    
+    const sourceFiles = program.getSourceFiles()
+      .filter(sf => {
+        // Include non-declaration files
+        if (sf.isDeclarationFile) return false;
+        
+        // Exclude node_modules
+        if (sf.fileName.includes('node_modules')) return false;
+        
+        // Include files from the workspace (project path or libs folder)
+        return sf.fileName.includes(workspaceRoot);
+      });
 
-    console.log(`Analyzing ${sourceFiles.length} source files...`);
-
+    // Get the component metadata from Angular's compiler
+    // The compiler has already analyzed all components and their scopes
     for (const sourceFile of sourceFiles) {
-      this.visitNode(sourceFile);
+      this.visitSourceFile(sourceFile);
     }
     
-    console.log(`Discovered ${this.components.size} components`);
+    console.log(`Found ${this.components.size} components`);
   }
 
-  private async discoverLibraryComponents(): Promise<void> {
-    console.log('\nDiscovering library components from imports...');
+  private findWorkspaceRoot(projectPath: string): string {
+    let current = projectPath;
     
-    // Collect all imports from components
-    const allImports = new Set<string>();
-    for (const component of this.components.values()) {
-      if (component.imports) {
-        component.imports.forEach(imp => {
-          console.log(`  Import: ${imp}`);
-          allImports.add(imp);
-        });
+    // Look for workspace markers (nx.json, angular.json, package.json with workspaces)
+    while (current !== path.dirname(current)) {
+      if (fs.existsSync(path.join(current, 'nx.json')) ||
+          fs.existsSync(path.join(current, 'angular.json')) ||
+          (fs.existsSync(path.join(current, 'package.json')) && 
+           fs.existsSync(path.join(current, 'libs')))) {
+        return current;
       }
+      current = path.dirname(current);
     }
-
-    console.log(`Found ${allImports.size} unique imports to analyze`);
-
-    // Try to resolve each import and find components/modules
-    for (const importName of allImports) {
-      await this.resolveImport(importName);
-    }
-
-    console.log(`Total components registered: ${this.components.size}`);
-    console.log(`Total selectors mapped: ${this.selectorToComponent.size}`);
+    
+    // Fallback to project path if no workspace root found
+    return projectPath;
   }
 
-  private async resolveImport(importName: string): Promise<void> {
-    // Common patterns for library components
-    // Examples: ButtonModule, MatButton, CommonModule, etc.
-    
-    // For now, we'll analyze all TypeScript declaration files from node_modules
-    // that match the import name to find component selectors
-    
-    // This is a simplified approach - we look for the import in the program's source files
-    const allSourceFiles = this.program.getSourceFiles();
-    
-    for (const sourceFile of allSourceFiles) {
-      // Check if this file might be related to the import
-      const fileName = sourceFile.fileName;
-      
-      // Only check node_modules files
-      if (!fileName.includes('node_modules')) continue;
-      
-      // Check if the file path contains the import name
-      const simplifiedImportName = importName.replace(/Module$/, '').replace(/Component$/, '');
-      if (!fileName.includes(simplifiedImportName.toLowerCase())) continue;
-      
-      // Analyze this source file for components
-      this.visitNodeForLibraryComponents(sourceFile, fileName);
-    }
-  }
-
-  private visitNodeForLibraryComponents(node: ts.Node, sourceFilePath: string): void {
-    if (ts.isClassDeclaration(node) && node.name) {
-      const decorators = ts.getDecorators?.(node) || (node as any).decorators;
-      
-      if (decorators) {
-        for (const decorator of decorators) {
-          if (ts.isCallExpression(decorator.expression)) {
-            const expression = decorator.expression;
-            const decoratorName = expression.expression.getText();
-            
-            if (decoratorName === 'Component') {
-              // Extract selector for library component
-              const className = node.name.getText();
-              let selector = '';
+  private visitSourceFile(sourceFile: ts.SourceFile): void {
+    const visit = (node: ts.Node) => {
+      if (ts.isClassDeclaration(node) && node.name) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decorators = ts.getDecorators?.(node) || (node as any).decorators;
+        
+        if (decorators) {
+          for (const decorator of decorators) {
+            if (ts.isCallExpression(decorator.expression)) {
+              const expression = decorator.expression;
+              const decoratorName = expression.expression.getText();
               
-              if (expression.arguments.length > 0) {
-                const arg = expression.arguments[0];
-                if (ts.isObjectLiteralExpression(arg)) {
-                  for (const property of arg.properties) {
-                    if (ts.isPropertyAssignment(property)) {
-                      const name = property.name.getText();
-                      if (name === 'selector' && ts.isStringLiteral(property.initializer)) {
-                        selector = property.initializer.text;
-                      }
-                    }
-                  }
-                }
-              }
-              
-              if (selector && !this.selectorToComponent.has(selector)) {
-                const componentInfo: ComponentInfo = {
-                  className,
-                  selector,
-                  filePath: sourceFilePath,
-                  isStandalone: false,
-                  imports: []
-                };
-                
-                console.log(`  Found library component: ${className} (selector: ${selector}) from ${this.getLibraryName(sourceFilePath)}`);
-                
-                this.components.set(className, componentInfo);
-                this.selectorToComponent.set(selector, componentInfo);
+              if (decoratorName === 'Component') {
+                this.processComponent(node, expression, sourceFile);
               }
             }
           }
         }
       }
-    }
-
-    ts.forEachChild(node, (child) => this.visitNodeForLibraryComponents(child, sourceFilePath));
-  }
-
-  private getLibraryName(filePath: string): string {
-    const match = filePath.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)/);
-    return match ? match[1] : 'unknown-library';
-  }
-
-  private visitNode(node: ts.Node): void {
-    if (ts.isClassDeclaration(node) && node.name) {
-      // Handle both old and new decorator APIs
-      const decorators = ts.getDecorators?.(node) || (node as any).decorators;
       
-      if (decorators) {
-        for (const decorator of decorators) {
-          if (ts.isCallExpression(decorator.expression)) {
-            const expression = decorator.expression;
-            const decoratorName = expression.expression.getText();
-            
-            if (decoratorName === 'Component') {
-              this.processComponent(node, expression);
-            }
-          }
-        }
-      }
-    }
-
-    ts.forEachChild(node, (child) => this.visitNode(child));
+      ts.forEachChild(node, visit);
+    };
+    
+    visit(sourceFile);
   }
 
-  private processComponent(node: ts.ClassDeclaration, decoratorExpression: ts.CallExpression): void {
+  private processComponent(
+    node: ts.ClassDeclaration,
+    decoratorExpression: ts.CallExpression,
+    sourceFile: ts.SourceFile
+  ): void {
+    // node.name is guaranteed to exist because we check it in visitSourceFile
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const className = node.name!.getText();
-    const sourceFile = node.getSourceFile();
-    const filePath = sourceFile.fileName;
-
     let selector = '';
     let isStandalone = false;
-    let imports: string[] = [];
 
     if (decoratorExpression.arguments.length > 0) {
       const arg = decoratorExpression.arguments[0];
@@ -288,10 +190,6 @@ export class AngularComponentAnalyzer {
               if (property.initializer.kind === ts.SyntaxKind.TrueKeyword) {
                 isStandalone = true;
               }
-            } else if (name === 'imports' && ts.isArrayLiteralExpression(property.initializer)) {
-              imports = property.initializer.elements
-                .map(el => el.getText())
-                .filter(Boolean);
             }
           }
         }
@@ -302,12 +200,9 @@ export class AngularComponentAnalyzer {
       const componentInfo: ComponentInfo = {
         className,
         selector,
-        filePath,
-        isStandalone,
-        imports
+        filePath: sourceFile.fileName,
+        isStandalone
       };
-      
-      console.log(`Found component: ${className} (selector: ${selector})`);
       
       this.components.set(className, componentInfo);
       this.selectorToComponent.set(selector, componentInfo);
@@ -315,29 +210,37 @@ export class AngularComponentAnalyzer {
   }
 
   private async parseTemplates(): Promise<void> {
-    console.log(`\nParsing templates for ${this.components.size} components...`);
+    console.log('Analyzing templates...');
+    
+    const workspaceRoot = this.findWorkspaceRoot(this.projectPath);
+    
     for (const [className, component] of this.components) {
-      const template = await this.getComponentTemplate(component);
-      if (template) {
-        console.log(`\nAnalyzing template for ${className}:`);
-        console.log(`Template length: ${template.length} chars`);
-        console.log(`First 100 chars: ${template.substring(0, 100)}...`);
-        this.analyzeTemplate(className, template, component.filePath);
+      // Parse templates for all workspace components (not node_modules)
+      if (!component.filePath.includes('node_modules') && component.filePath.includes(workspaceRoot)) {
+        console.log(`  - Analyzing ${className} at ${component.filePath}`);
+        const template = await this.getComponentTemplate(component);
+        if (template) {
+          console.log(`    Template found (${template.length} chars)`);
+          this.analyzeTemplate(component, template);
+        } else {
+          console.log(`    No template found`);
+        }
       } else {
-        console.log(`No template found for ${className}`);
+        console.log(`  - Skipping ${className} (not in workspace)`);
       }
     }
   }
 
   private async getComponentTemplate(component: ComponentInfo): Promise<string | null> {
-    const sourceFile = this.program.getSourceFile(component.filePath);
+    const program = this.ngProgram.getTsProgram();
+    const sourceFile = program.getSourceFile(component.filePath);
     if (!sourceFile) return null;
 
     let template: string | null = null;
 
     const visit = (node: ts.Node) => {
       if (ts.isClassDeclaration(node) && node.name?.getText() === component.className) {
-        // Handle both old and new decorator APIs
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decorators = ts.getDecorators?.(node) || (node as any).decorators;
         
         if (decorators) {
@@ -351,8 +254,12 @@ export class AngularComponentAnalyzer {
                     if (ts.isPropertyAssignment(property)) {
                       const name = property.name.getText();
                       
-                      if (name === 'template' && ts.isStringLiteral(property.initializer)) {
-                        template = property.initializer.text;
+                      if (name === 'template') {
+                        if (ts.isStringLiteral(property.initializer)) {
+                          template = property.initializer.text;
+                        } else if (ts.isNoSubstitutionTemplateLiteral(property.initializer)) {
+                          template = property.initializer.text;
+                        }
                       } else if (name === 'templateUrl' && ts.isStringLiteral(property.initializer)) {
                         const templatePath = path.join(
                           path.dirname(component.filePath),
@@ -377,68 +284,224 @@ export class AngularComponentAnalyzer {
     return template;
   }
 
-  private analyzeTemplate(componentClass: string, template: string, filePath: string): void {
+  private analyzeTemplate(component: ComponentInfo, template: string): void {
     try {
-      // Use Angular's template parser for accurate parsing
-      const parseResult = parseTemplate(template, filePath, {
+      // Use Angular's template parser
+      const parseResult = parseTemplate(template, component.filePath, {
         preserveWhitespaces: false,
         leadingTriviaChars: [],
       });
 
       if (parseResult.errors && parseResult.errors.length > 0) {
-        console.warn(`Template parsing errors in ${componentClass}:`, parseResult.errors.map(e => e.msg).join(', '));
+        console.warn(`Template errors in ${component.className}:`, parseResult.errors.map(e => e.msg).join(', '));
       }
 
-      // Walk the parsed template AST to find component usage
-      walkTemplateNodes(parseResult.nodes, this.selectorToComponent, componentClass, this.templateUsages);
+      // Walk the AST and find element nodes
+      this.walkTemplateNodes(parseResult.nodes, component);
       
     } catch (error) {
-      console.warn(`Error parsing template for ${componentClass}:`, error);
-      // Fallback to regex-based parsing
-      this.analyzeTemplateWithRegex(componentClass, template, filePath);
+      console.warn(`Error parsing template for ${component.className}:`, error);
+    }
+  }
+  // Angular compiler's parseTemplate returns untyped AST nodes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private walkTemplateNodes(nodes: any[], component: ComponentInfo): void {
+    for (const node of nodes) {
+      if (node.name && typeof node.name === 'string') {
+        // Found an element - check if it's a component selector
+        const usedComponent = this.selectorToComponent.get(node.name);
+        
+        this.templateUsages.push({
+          componentClass: component.className,
+          usedComponent: usedComponent || null,
+          usedSelector: node.name
+        });
+      }
+
+      // Check for translate pipe in bound properties
+      this.detectTranslatePipeInNode(node, component);
+
+      // Recursively process children
+      if (node.children && Array.isArray(node.children)) {
+        this.walkTemplateNodes(node.children, component);
+      }
+    }
+  }
+  // Angular compiler's parseTemplate returns untyped AST nodes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private detectTranslatePipeInNode(node: any, component: ComponentInfo): void {
+    // Check if node has value.ast (BoundText - interpolation)
+    if (node.value && node.value.ast) {
+      this.detectTranslatePipeInExpression(node.value.ast, component);
+    }
+
+    // Check bound properties ([property]="expr | translate")
+    if (node.inputs && Array.isArray(node.inputs)) {
+      for (const input of node.inputs) {
+        if (input.value && input.value.ast) {
+          this.detectTranslatePipeInExpression(input.value.ast, component);
+        }
+      }
+    }
+
+    // Check attributes that might have translate pipe
+    if (node.attributes && Array.isArray(node.attributes)) {
+      for (const attr of node.attributes) {
+        if (attr.value && typeof attr.value === 'string' && attr.value.includes('translate')) {
+          // Parse string value for translate pipes
+          const translateMatches = attr.value.matchAll(/['"]([^'"]+)['"]\s*\|\s*translate/g);
+          for (const match of translateMatches) {
+            this.translatePipeUsages.push({
+              componentClass: component.className,
+              translationKey: match[1],
+              filePath: component.filePath
+            });
+          }
+        }
+      }
+    }
+  }
+  // Angular compiler's template expressions are untyped
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private detectTranslatePipeInExpression(ast: any, component: ComponentInfo): void {
+    if (!ast) return;
+
+    // Check if this is a BindingPipe (pipe expression)
+    if (ast.name === 'translate') {
+      // Try to extract the translation key from the expression
+      if (ast.exp) {
+        // Check if exp has a direct value (LiteralPrimitive)
+        if (ast.exp.value !== undefined) {
+          this.translatePipeUsages.push({
+            componentClass: component.className,
+            translationKey: String(ast.exp.value),
+            filePath: component.filePath
+          });
+        }
+        // Check property access
+        else if (ast.exp.key && ast.exp.key.value) {
+          this.translatePipeUsages.push({
+            componentClass: component.className,
+            translationKey: String(ast.exp.key.value),
+            filePath: component.filePath
+          });
+        }
+        // Check for Binary expression (string concatenation)
+        else if (ast.exp.operation === '+') {
+          const dynamicKey = this.extractDynamicTranslationKey(ast.exp);
+          if (dynamicKey) {
+            this.translatePipeUsages.push({
+              componentClass: component.className,
+              translationKey: dynamicKey,
+              filePath: component.filePath
+            });
+          }
+        }
+        // Recursively check the exp itself
+        else {
+          this.detectTranslatePipeInExpression(ast.exp, component);
+        }
+      }
+    }
+
+    // Recursively check nested expressions in interpolations
+    if (ast.expressions && Array.isArray(ast.expressions)) {
+      for (const expr of ast.expressions) {
+        this.detectTranslatePipeInExpression(expr, component);
+      }
+    }
+
+    // Recursively check the exp property
+    if (ast.exp && ast.name !== 'translate') {
+      this.detectTranslatePipeInExpression(ast.exp, component);
+    }
+
+    // Recursively check pipe arguments
+    if (ast.args && Array.isArray(ast.args)) {
+      for (const arg of ast.args) {
+        this.detectTranslatePipeInExpression(arg, component);
+      }
     }
   }
 
-  private analyzeTemplateWithRegex(componentClass: string, template: string, filePath: string): void {
-    // Fallback: Match HTML tags that could be Angular components
-    const tagRegex = /<([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/gi;
-    let match;
+  /**
+   * Extract a pattern from dynamic translation keys (string concatenation)
+   * For example: 'products.' + product().key + '.name' becomes 'products.*.name'
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private extractDynamicTranslationKey(ast: any): string | null {
+    if (!ast) return null;
 
-    while ((match = tagRegex.exec(template)) !== null) {
-      const tagName = match[1];
+    // If it's a Binary expression (concatenation)
+    if (ast.operation === '+') {
+      const left = this.extractDynamicTranslationKey(ast.left);
+      const right = this.extractDynamicTranslationKey(ast.right);
       
-      // Check if this tag corresponds to a known component selector
-      const usedComponent = this.selectorToComponent.get(tagName);
-      if (usedComponent) {
-        this.templateUsages.push({
-          componentClass,
-          usedSelector: tagName,
-          filePath
-        });
+      if (left && right) {
+        return left + right;
       }
     }
+    
+    // If it's a literal string
+    if (ast.value !== undefined && typeof ast.value === 'string') {
+      return ast.value;
+    }
+    
+    // If it's a dynamic expression (property access, method call, etc.)
+    // Replace with a wildcard pattern
+    if (ast.name || ast.receiver || ast.key) {
+      return '*';
+    }
+    
+    return null;
   }
 
   private aggregateResults(): ComponentStats[] {
     const statsMap = new Map<string, ComponentStats>();
 
-    // Initialize all components
+    // Initialize all discovered components
     for (const [className, component] of this.components) {
       statsMap.set(className, {
         componentClass: className,
         usedIn: [],
         count: 0,
         source: this.determineSource(component.filePath),
-        external: component.filePath.includes('node_modules')
+        external: this.isExternal(component.filePath)
       });
     }
 
-    // Count usages
+    // Process template usages
     for (const usage of this.templateUsages) {
-      const usedComponent = this.selectorToComponent.get(usage.usedSelector);
-      if (usedComponent) {
-        const stats = statsMap.get(usedComponent.className);
+      if (usage.usedComponent) {
+        // Found a known component
+        const stats = statsMap.get(usage.usedComponent.className);
         if (stats) {
+          stats.count++;
+          if (!stats.usedIn.includes(usage.componentClass)) {
+            stats.usedIn.push(usage.componentClass);
+          }
+        }
+      } else {
+        // Unknown component (from library) - create entry using selector
+        const selector = usage.usedSelector;
+        
+        // Skip standard HTML elements
+        if (!selector.includes('-') && !this.isAngularBuiltin(selector)) {
+          continue;
+        }
+        
+        if (!statsMap.has(selector)) {
+          statsMap.set(selector, {
+            componentClass: selector,
+            usedIn: [usage.componentClass],
+            count: 1,
+            source: this.guessLibrarySource(selector),
+            external: true
+          });
+        } else {
+          // We know the selector exists because we checked !statsMap.has(selector) above
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const stats = statsMap.get(selector)!;
           stats.count++;
           if (!stats.usedIn.includes(usage.componentClass)) {
             stats.usedIn.push(usage.componentClass);
@@ -450,19 +513,64 @@ export class AngularComponentAnalyzer {
     return Array.from(statsMap.values()).sort((a, b) => b.count - a.count);
   }
 
+  private isAngularBuiltin(selector: string): boolean {
+    const builtins = ['ng-container', 'ng-content', 'ng-template', 'router-outlet'];
+    return builtins.includes(selector);
+  }
+
+  private isExternal(filePath: string): boolean {
+    return filePath.includes('node_modules');
+  }
+
+  private guessLibrarySource(selector: string): string {
+    // Try to guess library from selector prefix
+    if (selector.startsWith('p-')) return 'primeng';
+    if (selector.startsWith('mat-')) return '@angular/material';
+    if (selector.startsWith('ngb-')) return '@ng-bootstrap/ng-bootstrap';
+    if (selector.startsWith('nz-')) return 'ng-zorro-antd';
+    if (selector.includes('router')) return '@angular/router';
+    return `library (selector: ${selector})`;
+  }
+
   private determineSource(filePath: string): string {
-    // If file is in node_modules, extract library name
     if (filePath.includes('node_modules')) {
       const match = filePath.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)/);
       return match ? match[1] : 'unknown-library';
     }
     
-    // Otherwise, return relative path from project root
     return path.relative(this.projectPath, filePath);
+  }
+
+  public getTranslatePipeUsages(): TranslatePipeUsage[] {
+    return this.translatePipeUsages;
   }
 }
 
 export async function analyzeComponents(options: AnalyzerOptions): Promise<ComponentStats[]> {
   const analyzer = new AngularComponentAnalyzer(options);
   return await analyzer.analyze();
+}
+
+export async function analyzeTranslatePipes(options: AnalyzerOptions): Promise<TranslatePipeUsage[]> {
+  const analyzer = new AngularComponentAnalyzer(options);
+  await analyzer.analyze();
+  return analyzer.getTranslatePipeUsages();
+}
+
+export interface ValidateTranslationsOptions extends AnalyzerOptions {
+  translationsPath: string;
+}
+
+export async function validateTranslations(
+  options: ValidateTranslationsOptions
+): Promise<TranslationValidationResult> {
+  // Get all translation keys used in the project
+  const usages = await analyzeTranslatePipes(options);
+  const usedKeys = Array.from(new Set(usages.map(u => u.translationKey)));
+  
+  // Read translation files
+  const translationFiles = readTranslationFiles(options.translationsPath);
+  
+  // Validate coverage
+  return validateTranslationCoverage(usedKeys, translationFiles);
 }
