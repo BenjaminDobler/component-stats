@@ -1,0 +1,42 @@
+<div class="contact-container">
+  <header>
+    <h1>{{ 'contact.title' | translate }}</h1>
+    <p>{{ 'contact.description' | translate }}</p>
+  </header>
+
+  <div class="content-grid">
+    <div class="form-section">
+      <form>
+        <div class="form-group">
+          <label [attr.for]="'name'">{{ 'contact.form.name' | translate }}</label>
+          <input type="text" id="name" [placeholder]="'contact.form.name' | translate">
+        </div>
+
+        <div class="form-group">
+          <label [attr.for]="'email'">{{ 'contact.form.email' | translate }}</label>
+          <input type="email" id="email" [placeholder]="'contact.form.email' | translate">
+        </div>
+
+        <div class="form-group">
+          <label [attr.for]="'message'">{{ 'contact.form.message' | translate }}</label>
+          <textarea id="message" rows="5" [placeholder]="'contact.form.message' | translate"></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          {{ 'contact.form.submit' | translate }}
+        </button>
+      </form>
+    </div>
+
+    <div class="info-section">
+      <h3>{{ 'contact.info.address' | translate }}</h3>
+      <p>123 Main Street, City, Country</p>
+
+      <h3>{{ 'contact.info.phone' | translate }}</h3>
+      <p>+1 234 567 8900</p>
+
+      <h3>{{ 'contact.info.email' | translate }}</h3>
+      <p>contact@example.com</p>
+    </div>
+  </div>
+</div>

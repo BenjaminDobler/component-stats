@@ -11,30 +11,7 @@ interface Product {
   selector: 'app-products',
   standalone: true,
   imports: [CommonModule, TranslatePipe],
-  template: `
-    <div class="products-container">
-      <header>
-        <h1>{{ 'products.title' | translate }}</h1>
-        <p>{{ 'products.description' | translate }}</p>
-      </header>
-
-      <div class="products-grid">
-        @for (product of products; track product.id) {
-          <div class="product-card">
-            <h3>{{ 'products.' + product.key + '.name' | translate }}</h3>
-            <p class="description">{{ 'products.' + product.key + '.description' | translate }}</p>
-            <div class="price-tag">
-              <span>{{ 'products.' + product.key + '.price' | translate }}</span>: $99.99
-            </div>
-            <div class="actions">
-              <button class="btn-primary">{{ 'products.add_to_cart' | translate }}</button>
-              <button class="btn-secondary">{{ 'products.view_details' | translate }}</button>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  `,
+  templateUrl: './products.component.html',
   styles: [`
     .products-container {
       padding: 2rem;

@@ -5,25 +5,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
   selector: 'app-home',
   standalone: true,
   imports: [TranslatePipe],
-  template: `
-    <div class="home-container">
-      <header class="hero">
-        <h1>{{ 'home.welcome' | translate }}</h1>
-        <p class="subtitle">{{ 'home.description' | translate }}</p>
-      </header>
-
-      <section class="features">
-        <div class="feature-card">
-          <h3>{{ 'home.getting_started' | translate }}</h3>
-          <p>{{ 'app.subtitle' | translate }}</p>
-        </div>
-        <div class="feature-card">
-          <h3>{{ 'home.learn_more' | translate }}</h3>
-          <p>{{ 'common.loading' | translate }}</p>
-        </div>
-      </section>
-    </div>
-  `,
+  templateUrl: './home.component.html',
   styles: [`
     .home-container {
       padding: 2rem;
