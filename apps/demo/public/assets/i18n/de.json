@@ -6,12 +6,10 @@
   "navigation": {
     "home": "Startseite",
     "products": "Produkte",
-    "about": "Über uns",
     "contact": "Kontakt"
   },
   "home": {
     "welcome": "Willkommen in unserer Anwendung!",
-    "description": "Dies ist eine Demo-Anwendung, die die Translate-Pipe-Funktionalität demonstriert.",
     "getting_started": "Erste Schritte",
     "learn_more": "Mehr erfahren"
   },

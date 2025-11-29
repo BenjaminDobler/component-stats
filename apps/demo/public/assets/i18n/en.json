@@ -5,12 +5,10 @@
   },
   "navigation": {
     "home": "Home",
-    "products": "Products",
     "about": "About",
     "contact": "Contact"
   },
   "home": {
-    "welcome": "Welcome to our application!",
     "description": "This is a demo application showcasing the translate pipe functionality.",
     "getting_started": "Getting Started",
     "learn_more": "Learn More"
